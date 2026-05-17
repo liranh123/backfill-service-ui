@@ -161,6 +161,7 @@ async function createBackfillRequest(payload: BackfillRequest): Promise<Backfill
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const DATE_KEYWORDS = ["date", "time", "created_at", "updated_at", "started_at", "ended_at", "timestamp"];
+const NO_GROUP_BY_FIELD = "__no_group_by_field__";
 
 function isDateField(field: string): boolean {
   return DATE_KEYWORDS.some((kw) => field.toLowerCase().includes(kw));
@@ -1136,12 +1137,15 @@ export default function App() {
                   error={errors.last_field_group_by}
                 >
                   {availableFields.length > 0 ? (
-                    <Select value={form.last_field_group_by} onValueChange={(v) => set("last_field_group_by", v)}>
+                    <Select
+                      value={form.last_field_group_by || NO_GROUP_BY_FIELD}
+                      onValueChange={(v) => set("last_field_group_by", v === NO_GROUP_BY_FIELD ? "" : v)}
+                    >
                       <SelectTrigger id="last_field_group_by" className="h-8 text-xs max-w-xs">
                         <SelectValue placeholder="Select field (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="" className="text-xs text-muted-foreground italic">— none —</SelectItem>
+                        <SelectItem value={NO_GROUP_BY_FIELD} className="text-xs text-muted-foreground italic">— none —</SelectItem>
                         {availableFields.map((f) => <SelectItem key={f} value={f} className="text-xs font-mono">{f}</SelectItem>)}
                       </SelectContent>
                     </Select>
