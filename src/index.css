@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 222 20% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 20% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 20% 12%;
+    --primary: 222 47% 25%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 14% 93%;
+    --secondary-foreground: 222 20% 18%;
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 14% 90%;
+    --accent-foreground: 222 20% 18%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 222 47% 25%;
+    --radius: 0.375rem;
+  }
+
+  .dark {
+    --background: 222 22% 9%;
+    --foreground: 210 20% 92%;
+    --card: 222 22% 12%;
+    --card-foreground: 210 20% 92%;
+    --popover: 222 22% 12%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 210 40% 60%;
+    --primary-foreground: 222 22% 9%;
+    --secondary: 222 18% 18%;
+    --secondary-foreground: 210 20% 88%;
+    --muted: 222 18% 18%;
+    --muted-foreground: 215 14% 55%;
+    --accent: 222 18% 22%;
+    --accent-foreground: 210 20% 88%;
+    --destructive: 0 62% 44%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 222 18% 22%;
+    --input: 222 18% 22%;
+    --ring: 210 40% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-size: 13px;
+  }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
