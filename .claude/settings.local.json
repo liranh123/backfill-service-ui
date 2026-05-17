@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/tmp/**)",
+      "Bash(npm create *)",
+      "Read(//tmp/**)",
+      "Bash(npm install *)",
+      "Bash(node -e ' *)",
+      "Bash(tar -xzf /c/Users/liran/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/c2774a72-8be6-4a7e-9be4-7851079ca954/b2e4056e-54c5-4885-bc94-90ae8cec3ca2/skills/web-artifacts-builder/scripts/shadcn-components.tar.gz -C src/)",
+      "Bash(npx tsc *)",
+      "Bash(bash /c/Users/liran/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/c2774a72-8be6-4a7e-9be4-7851079ca954/b2e4056e-54c5-4885-bc94-90ae8cec3ca2/skills/web-artifacts-builder/scripts/bundle-artifact.sh)",
+      "Bash(pnpm add *)",
+      "Bash(rm -rf dist bundle.html)",
+      "Bash(pnpm exec *)",
+      "Bash(mv postcss.config.js postcss.config.cjs)",
+      "Bash(mv tailwind.config.js tailwind.config.cjs)",
+      "Bash(rm -rf dist bundle.html .parcel-cache)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(serve --version)"
+    ]
+  }
+}
