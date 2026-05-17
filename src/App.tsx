@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Sun, Moon, Copy, Check, ChevronDown, ChevronUp, Database, Table2, Layers, RefreshCw, AlertCircle, CheckCircle2, Loader2, Search, ListFilter, Plus, X, Code2, Eye, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,8 +160,6 @@ async function createBackfillRequest(payload: BackfillRequest): Promise<Backfill
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const DATE_KEYWORDS = ["date", "time", "created_at", "updated_at", "started_at", "ended_at", "timestamp"];
-const NO_GROUP_BY_FIELD = "__no_group_by_field__";
-
 function isDateField(field: string): boolean {
   return DATE_KEYWORDS.some((kw) => field.toLowerCase().includes(kw));
 }
@@ -618,6 +615,9 @@ export default function App() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [hasAttempted, setHasAttempted] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [fieldsData, setFieldsData] = useState<BackfillFieldsResponse | null>(null);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
+  const [fieldsError, setFieldsError] = useState<Error | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const responseRef = useRef<HTMLDivElement>(null);
   // ↑↑↓↓←→←→BA — you know what this is
@@ -639,7 +639,7 @@ export default function App() {
     setOptionsLoading(true);
     getBackfillOptions().then((data) => {
       setOptions(data);
-      // Pre-select first schema + table; fields are fetched by useQuery automatically
+      // Pre-select first schema + table; fields are fetched automatically below.
       const cat = data.catalogs.find((c) => c.name === "dataverse");
       if (cat?.schemas.length) {
         const s = cat.schemas[0];
@@ -660,17 +660,36 @@ export default function App() {
   }, [options, form.catalog, form.schema]);
 
   // ── Fields via React Query — fetched & cached per catalog.schema.table ──────
-  const fieldsQueryKey = ["fields", form.catalog, form.schema, form.table_name] as const;
-  const {
-    data: fieldsData,
-    isFetching: fieldsLoading,
-    error: fieldsError,
-  } = useQuery({
-    queryKey: fieldsQueryKey,
-    queryFn: () => getTableFields(form.catalog, form.schema, form.table_name),
-    enabled: !!(form.catalog && form.schema && form.table_name),
-    staleTime: 5 * 60 * 1000,
-  });
+  useEffect(() => {
+    if (!(form.catalog && form.schema && form.table_name)) {
+      setFieldsData(null);
+      setFieldsError(null);
+      setFieldsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setFieldsLoading(true);
+    setFieldsError(null);
+
+    getTableFields(form.catalog, form.schema, form.table_name)
+      .then((data) => {
+        if (!cancelled) setFieldsData(data);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setFieldsData(null);
+          setFieldsError(error instanceof Error ? error : new Error("Could not load fields"));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setFieldsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.catalog, form.schema, form.table_name]);
 
   const availableFields = fieldsData?.fields ?? [];
   const dateFields = useMemo(() => availableFields.filter(isDateField), [availableFields]);
@@ -727,7 +746,7 @@ export default function App() {
     setErrors((prev) => ({ ...prev, schema: undefined, table_name: undefined, select_fields: undefined }));
   };
 
-  // When table changes: clear current fields (useQuery will fetch new ones)
+  // When table changes: clear current fields; the effect above fetches new ones.
   // Works for both known tables and custom tables from any schema
   const handleTableChange = (v: string) => {
     setForm((prev) => ({ ...prev, table_name: v, select_fields: [], custom_select_fields: [] }));
@@ -1113,18 +1132,17 @@ export default function App() {
               <Badge variant="outline" className="text-xs py-0 px-1.5 ml-1 h-4">optional</Badge>
               <span className="ml-auto text-muted-foreground">{advancedOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
             </button>
-            {advancedOpen && (
-              <div className="px-4 pb-4 pt-3 border-t border-border space-y-4">
+            <div className={`px-4 pb-4 pt-3 border-t border-border space-y-4 ${advancedOpen ? "block" : "hidden"}`}>
                 <FormRow label="unique_id_field" htmlFor="unique_id_field" required error={errors.unique_id_field} helper="Primary key or unique identifier used for deduplication.">
                   {availableFields.length > 0 ? (
-                    <Select value={form.unique_id_field} onValueChange={(v) => set("unique_id_field", v)}>
-                      <SelectTrigger id="unique_id_field" className="h-8 text-xs max-w-xs">
-                        <SelectValue placeholder="Select unique ID field" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableFields.map((f) => <SelectItem key={f} value={f} className="text-xs font-mono">{f}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <select
+                      id="unique_id_field"
+                      value={form.unique_id_field}
+                      onChange={(e) => set("unique_id_field", e.target.value)}
+                      className="flex h-8 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-xs font-mono ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {availableFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
                   ) : (
                     <Input id="unique_id_field" value={form.unique_id_field} onChange={(e) => set("unique_id_field", e.target.value)} placeholder="e.g. soldier_id" className="h-8 text-xs font-mono max-w-xs" />
                   )}
@@ -1137,18 +1155,15 @@ export default function App() {
                   error={errors.last_field_group_by}
                 >
                   {availableFields.length > 0 ? (
-                    <Select
-                      value={form.last_field_group_by || NO_GROUP_BY_FIELD}
-                      onValueChange={(v) => set("last_field_group_by", v === NO_GROUP_BY_FIELD ? "" : v)}
+                    <select
+                      id="last_field_group_by"
+                      value={form.last_field_group_by}
+                      onChange={(e) => set("last_field_group_by", e.target.value)}
+                      className="flex h-8 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-xs font-mono ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <SelectTrigger id="last_field_group_by" className="h-8 text-xs max-w-xs">
-                        <SelectValue placeholder="Select field (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_GROUP_BY_FIELD} className="text-xs text-muted-foreground italic">— none —</SelectItem>
-                        {availableFields.map((f) => <SelectItem key={f} value={f} className="text-xs font-mono">{f}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                      <option value="">none</option>
+                      {availableFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
                   ) : (
                     <Input
                       id="last_field_group_by"
@@ -1174,8 +1189,7 @@ export default function App() {
                     placeholder={DEFAULT_METRO_URL}
                   />
                 </FormRow>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Request Preview */}
